@@ -6,9 +6,6 @@ import (
 	"unicode/utf8"
 )
 
-// Длина случайно сгенерированого токена
-const tokenLen = 12
-
 // Буквы на которые не может начинаться следующее слово
 const excludeLetters = "цфзшэЪЬЫЙ"
 
@@ -26,9 +23,9 @@ type Game struct {
 }
 
 // findPlayer если находит игрока возвращает объект, индекс и флаг ok = true
-func (g *Game) findPlayer(token string, password string) (*Player, int, bool) {
+func (g *Game) findPlayer(name string, password string) (*Player, int, bool) {
 	for i, p := range g.players {
-		if p.Token == token && p.Password == password {
+		if p.Name == name && p.Password == password {
 			return p, i, true
 		}
 	}
@@ -99,20 +96,18 @@ func (g *Game) findNextPlayer() (int, bool) {
 
 // RegisterPlayer добавляет игрока, игрок может быть добавлен только до начала партии.
 // Игрок передаёт свой пароль и взамен получает уникальный токен.
-func (g *Game) RegisterPlayer(name string, password string) (string, error) {
+func (g *Game) RegisterPlayer(name string, password string)  error {
 	if g.isRegistered(name) {
-		return "", AlreadyRegistered
+		return AlreadyRegistered
 	}
 
-	token := uniqueID(tokenLen)
 	p := &Player{
 		Name:     name,
 		Password: password,
-		Token:    token,
 	}
 	g.players = append(g.players, p)
 
-	return token, nil
+	return nil
 }
 
 // MakeTurn принимает ответ от игрока, если такого игрока нет в списке возвращается ошибка UnknownPlayer.
@@ -130,7 +125,6 @@ func (g *Game) MakeTurn(token string, password string, word string) error {
 		g.nextTurn()
 		return nil
 	}
-
 }
 
 // Start начинает игру
