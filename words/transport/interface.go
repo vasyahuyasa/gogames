@@ -13,12 +13,19 @@ type Interface interface {
 	// RegChan возвращает канал из которого будут приходить запросы о регистрации в матче
 	RegChan() <-chan RegInfo
 
+	// TurnChan возвращает канал из которого будут приходить ответы на запрошенные слова
+	TurnChan() <-chan Turn
+
 	// Отослать ошибку игроку если to пустое, то разослать всем
 	Error(to string, err error)
 }
 
 // RegInfo информация посылаемая игроком для регистрации в перед началом
 type RegInfo struct {
-	Name     stirng
-	Password String
+	Name string
+}
+
+// Turn информация песылаемая игроком для ответа на команду о запросе слова
+type Turn struct {
+	Name string
 }

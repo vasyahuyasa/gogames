@@ -20,7 +20,7 @@ type Сollection struct {
 
 // FromReader загружает данные словаря из потока, каждый новый элемент в новой строке
 func (c *Сollection) FromReader(r io.Reader) error {
-	c.Rest()
+	c.Reset()
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -41,8 +41,8 @@ func (c *Сollection) FromFile(name string) error {
 	return c.FromReader(f)
 }
 
-// Rest обнуляет словарь
-func (c *Сollection) Rest() {
+// Reset обнуляет словарь
+func (c *Сollection) Reset() {
 	c.data = make(map[string]item, dictonarySize)
 }
 
@@ -65,6 +65,6 @@ func (c *Сollection) DeleteKey(key string) {
 // New создаёт новую инициализированую коллекцию
 func New() Сollection {
 	c := Сollection{}
-	c.Rest()
+	c.Reset()
 	return c
 }

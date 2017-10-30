@@ -14,8 +14,8 @@ const excludeLetters = "цфзшэЪЬЫЙ"
 // Game отвечает за всю игровую логику
 type Game struct {
 	players   []*Player
-	dictonary *dictonary.Collection
-	used      *dictonary.Collection
+	dictonary *dictonary.Сollection
+	used      *dictonary.Сollection
 
 	started     bool
 	turnTimeout time.Duration
@@ -27,9 +27,9 @@ type Game struct {
 }
 
 // findPlayer если находит игрока возвращает объект, индекс и флаг ok = true
-func (g *Game) findPlayer(name string, password string) (*Player, int, bool) {
+func (g *Game) findPlayer(name string) (*Player, int, bool) {
 	for i, p := range g.players {
-		if p.Name == name && p.Password == password {
+		if p.Name == name {
 			return p, i, true
 		}
 	}
@@ -151,8 +151,7 @@ func (g *Game) RegisterPlayer(name string, password string) error {
 	}
 
 	p := &Player{
-		Name:     name,
-		Password: password,
+		Name: name,
 	}
 	g.players = append(g.players, p)
 
@@ -165,8 +164,8 @@ func (g *Game) RegisterPlayer(name string, password string) error {
 // Если слово отсутствует в словаре игрок выбывает.
 // Если слово повторяется, то игрок выбывает.
 // Если во время хода игрок выбывает, то ход переходит следующему игроку.
-func (g *Game) MakeTurn(token string, password string, word string) error {
-	p, i, ok := g.findPlayer(token, password)
+func (g *Game) MakeTurn(name string, word string) error {
+	p, i, ok := g.findPlayer(name)
 	if !ok {
 		return UnknownPlayer
 	}
