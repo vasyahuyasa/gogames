@@ -145,7 +145,11 @@ func (g *Game) nextTurn() {
 }
 
 // RegisterPlayer добавляет игрока, игрок может быть добавлен только до начала партии.
-func (g *Game) RegisterPlayer(name string, password string) error {
+func (g *Game) RegisterPlayer(name string) error {
+	if g.started {
+		return GameInProgress
+	}
+
 	if g.isRegistered(name) {
 		return AlreadyRegistered
 	}
@@ -217,7 +221,7 @@ func (g *Game) Start() (<-chan Turn, error) {
 		return nil, AlredyStarted
 	}
 
-	g.used.Reset()
+	g.used = dictonary.New()
 	g.turnChan = make(chan Turn, 1000)
 	g.started = true
 	return g.turnChan, nil

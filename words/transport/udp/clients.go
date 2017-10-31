@@ -7,7 +7,7 @@ import (
 
 type client struct {
 	name string
-	addr net.UDPAddr
+	addr *net.UDPAddr
 	W    io.Writer
 }
 
@@ -25,7 +25,7 @@ func (c *clients) byName(name string) (*client, bool) {
 }
 
 // byAddr находит клиента по адресу
-func (c *clients) byAddr(addr net.UDPAddr) (*client, bool) {
+func (c *clients) byAddr(addr *net.UDPAddr) (*client, bool) {
 	for _, clt := range *c {
 		if clt.addr.String() == addr.String() {
 			return clt, true

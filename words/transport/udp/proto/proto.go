@@ -8,26 +8,26 @@ const (
 	CmdRegister CommandType = "register"
 
 	// CmdSupply клиент прислал команду с запрашиваемым словом
-	CmdSupply = "supply"
+	CmdSupply CommandType = "supply"
 
 	// CmdDemand сервер рассылает команду с запрашиваемым словом
-	CmdDemand = "demand"
+	CmdDemand CommandType = "demand"
 )
 
-// Command тип команды, используется для идентефикации
-type Command struct {
+// Cmd тип команды, используется для идентефикации
+type Cmd struct {
 	Command CommandType `json:"command"`
 }
 
 // Register заявка на рекистрацию от клиента
 type Register struct {
-	Command
+	Cmd
 	Name string `json:"name"`
 }
 
 // Deamand пакет отправляемый всем клиентам для запроса слова
 type Deamand struct {
-	Command        // demand
+	Cmd            // demand
 	Word    string `json:"word"`
 	Letter  string `json:"letter"`
 	Timeout int    `json:"timeout"`
@@ -36,13 +36,13 @@ type Deamand struct {
 
 // Supply пакет отправляемый серверу с запрашиваемым словом
 type Supply struct {
-	Command        // supply
-	Word    string `json:"word"`
+	Cmd         // supply
+	Word string `json:"word"`
 }
 
 // Error ошибка передаваемая от сервера клиенту
 type Error struct {
-	Command        // error
-	Code    string `json:"code"`
-	Msg     string `json:"msg"`
+	Cmd         // error
+	Code string `json:"code"`
+	Msg  string `json:"msg"`
 }

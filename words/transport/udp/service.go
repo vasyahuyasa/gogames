@@ -16,19 +16,43 @@ const chanSize = 1000
 // Service иплементирует transport.Interface поверх протокола UDP
 type Service struct {
 	clients clients
-
-	regs  chan transport.RegInfo
-	turns chan transport.Turn
+	conn    *net.UDPConn
+	regs    chan transport.RegInfo
+	turns   chan transport.Turn
 }
 
 // SendTurn отправляет пакет с запросом слова всем подключенным клиентам индивидуально
-func (s *Service) SendTurn(core.Turn) error {
+func (s *Service) SendTurn(t core.Turn) error {
+	cmd := proto.Deamand{
+		Cmd: proto.Cmd{
+			Command: proto.CmdDemand,
+		},
+		Word:    t.Word,
+		Letter:  t.Letter,
+		Timeout: int(t.Timeout.Seconds()),
+		Player:  t.Player,
+	}
+
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		return err
+	}
+
+	for _, client := range s.clients {
+		s.conn.WriteToUDP(data, client.addr)
+	}
+
 	return nil
 }
 
 // RegChan врзвращает канал через который будут поступать заявки на регистрацию
 func (s *Service) RegChan() <-chan transport.RegInfo {
 	return s.regs
+}
+
+// TurnChan возвращает канал через который клиенты присылают свои ответы
+func (s *Service) TurnChan() <-chan transport.Turn {
+	return s.turns
 }
 
 // Error отправляет ошибку клиенту, если клиент не указан, то всем
@@ -38,11 +62,13 @@ func (s *Service) Error(to string, err error) {
 
 // parseData обрабатывае входные данные от клиента
 func (s *Service) parseData(from *net.UDPAddr, data []byte) error {
-	c := proto.Command{}
+	c := proto.Cmd{}
 	err := json.Unmarshal(data, &c)
 	if err != nil {
 		return err
 	}
+
+	log.Println("Пакет:", c)
 
 	switch c.Command {
 
@@ -66,18 +92,21 @@ func (s *Service) parseData(from *net.UDPAddr, data []byte) error {
 			return err
 		}
 
-		name, ok := s.clients.byAddr(from)
+		c, ok := s.clients.byAddr(from)
 		if !ok {
 			return fmt.Errorf("Клиент не зарегистрирован: %s", from)
 		}
 
 		s.turns <- transport.Turn{
-			Name: name,
+			Name: c.name,
+			Word: sup.Word,
 		}
 
+	default:
+		return fmt.Errorf("Неизвестная команда: %q", c.Command)
 	}
 
-	return fmt.Errorf("Неизвестная команда: %q", c.Command)
+	return nil
 }
 
 // run запускает фоновый udp listener
@@ -93,7 +122,10 @@ func (s *Service) run(conn *net.UDPConn) {
 				continue
 			}
 
-			s.parseData(addr, buf[:n])
+			err = s.parseData(addr, buf[:n])
+			if err != nil {
+				log.Printf("Ошибка parseData: %v", err)
+			}
 		}
 	}()
 }
@@ -110,8 +142,10 @@ func New(port uint) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Сервер запущен на %s", addr)
 
 	s := &Service{
+		conn:  conn,
 		regs:  make(chan transport.RegInfo, chanSize),
 		turns: make(chan transport.Turn, chanSize),
 	}

@@ -28,4 +28,5 @@ type RegInfo struct {
 // Turn информация песылаемая игроком для ответа на команду о запросе слова
 type Turn struct {
 	Name string
+	Word string
 }
