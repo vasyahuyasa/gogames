@@ -12,6 +12,9 @@ const (
 
 	// CmdDemand сервер рассылает команду с запрашиваемым словом
 	CmdDemand CommandType = "demand"
+
+	// CmdError сервер отсылает сообщение об ошибке
+	CmdError CommandType = "error"
 )
 
 // Cmd тип команды, используется для идентефикации

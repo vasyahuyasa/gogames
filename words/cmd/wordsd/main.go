@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/vasyahuyasa/gogames/words/core"
-	udpTransport "github.com/vasyahuyasa/gogames/words/transport/udp"
 	"log"
 	"time"
+
+	"github.com/vasyahuyasa/gogames/words/core"
+	udpTransport "github.com/vasyahuyasa/gogames/words/transport/udp"
 )
 
 const port = 0xbeef
@@ -44,7 +45,7 @@ func main() {
 				log.Printf("Ошибка регистрации игрока в игре: %v", err)
 			}
 
-		// игра запросилас слово
+		// игра запросила слово
 		case turn := <-turns:
 			if err := trans.SendTurn(turn); err != nil {
 				trans.Error(turn.Player, err)

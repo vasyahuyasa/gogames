@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"log"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -9,7 +11,7 @@ import (
 )
 
 // Буквы на которые не может начинаться следующее слово
-const excludeLetters = "цфзшэЪЬЫЙ"
+const excludeLetters = "цфзшэъьый"
 
 // Game отвечает за всю игровую логику
 type Game struct {
@@ -21,9 +23,9 @@ type Game struct {
 	turnTimeout time.Duration
 	turnChan    chan Turn
 
-	word       string
-	nextRune   string
-	nextPlayer int
+	word          string
+	nextRune      string
+	currentPlayer int
 }
 
 // findPlayer если находит игрока возвращает объект, индекс и флаг ok = true
@@ -78,35 +80,19 @@ func (g *Game) lastRune(word string) string {
 	return last
 }
 
-// nextWord устанавливает текущее слово и следующую букву
-// func (g *Game) nextWord(word string) {
-// 	g.word = strings.Title(word)
-// 	g.nextRune = ""
-
-// 	// разделить присланное слово на отдельные буквы
-// 	wordRunes := strings.Split(strings.ToLower(word), "")
-
-// 	// пройти по массиву букв начиная с последней и найти ту,
-// 	// с которой будет начинаться следующее слово
-// 	for i := len(wordRunes) - 1; i >= 0; i-- {
-// 		if !strings.Contains(excludeLetters, wordRunes[i]) {
-// 			g.nextRune = wordRunes[i]
-// 			break
-// 		}
-// 	}
-// }
-
-// findNextPlayer ищет index следующего не выбывшего игрока, если не найден возвращает ok = false
+// findNextPlayer ищет index следующего не выбывшего игрока
 func (g *Game) findNextPlayer() int {
 	// оставшиеся игроки до конца массива
-	for i, p := range g.players[g.nextPlayer+1:] {
+	nextIndex := g.currentPlayer + 1
+	for i, p := range g.players[nextIndex:] {
 		if !p.IsOut {
-			return i
+			return nextIndex + i
 		}
 	}
 
 	// игроки с начала массива до текущего
-	for i, p := range g.players[:g.nextPlayer] {
+	for i, p := range g.players[:g.currentPlayer] {
+		log.Println("index:", i, "val:", p.IsOut)
 		if !p.IsOut {
 			return i
 		}
@@ -126,21 +112,19 @@ func (g *Game) activePlayers() int {
 	return count
 }
 
-// nextTurn проверяет есть ли победитель и если есть рассылает уведомление о окончании матча
-// иначе устанавливает следующего игрока и отсылает команду с запрсом нового слова
-func (g *Game) nextTurn() {
+// sendTurn отсылает команду с запрсом нового слова текущему игроку
+func (g *Game) sendTurn() {
 	// есть победитель или не осталось игроков
 	if g.activePlayers() <= 1 {
 		panic("We have a winner")
 	}
 
 	// найти следующего игрока и разослать пакет
-	g.nextPlayer = g.findNextPlayer()
 	g.turnChan <- Turn{
 		Word:    g.word,
 		Letter:  g.nextRune,
 		Timeout: g.turnTimeout,
-		Player:  g.players[g.nextPlayer].Name,
+		Player:  g.players[g.currentPlayer].Name,
 	}
 }
 
@@ -162,11 +146,37 @@ func (g *Game) RegisterPlayer(name string) error {
 	return nil
 }
 
+// checkTurn проверяет является ли слово word подходящим для ответа.
+// за неверный ответ считается:
+// Пустой word;
+// Не совпадение последней буквы и первой буквы присланного слова;
+// Если слово отсутствует в словаре;
+// Если слово повторяется;
+func (g *Game) checkWord(word string) error {
+	// пустой ответ
+	if utf8.RuneCountInString(word) == 0 {
+		return EmptyWord
+	}
+
+	// неизвестное слово
+	if !g.dictonary.HasKey(word) {
+		return MissedInDictonary
+	}
+
+	// повтор
+	if g.used.HasKey(word) {
+		return UsedWord
+	}
+
+	// неверное слово
+	if !g.validWord(word) {
+		return Mistmatch
+	}
+
+	return nil
+}
+
 // MakeTurn принимает ответ от игрока, если такого игрока нет в списке возвращается ошибка UnknownPlayer.
-// Пустой word считается за проигрыш.
-// Не совпадение последней буквы и первой буквы присланного слова считается за проигрыш.
-// Если слово отсутствует в словаре игрок выбывает.
-// Если слово повторяется, то игрок выбывает.
 // Если во время хода игрок выбывает, то ход переходит следующему игроку.
 func (g *Game) MakeTurn(name string, word string) error {
 	p, i, ok := g.findPlayer(name)
@@ -175,52 +185,40 @@ func (g *Game) MakeTurn(name string, word string) error {
 	}
 
 	// ход другого игрока
-	if i != g.nextPlayer {
+	if i != g.currentPlayer {
 		return WrongPlayer
 	}
 
-	// пустой ответ
-	if utf8.RuneCountInString(word) == 0 {
-		p.IsOut = true
-		g.nextTurn()
-		return EmptyWord
-	}
+	// с этого момента ход переходит другому игроку
+	g.currentPlayer = g.findNextPlayer()
 
-	// неизвестное слово
-	if !g.dictonary.HasKey(word) {
+	// верное ли слово прислал игрок
+	err := g.checkWord(word)
+	if err != nil {
 		p.IsOut = true
-		g.nextTurn()
-		return MissedInDictonary
-	}
-
-	// повтор
-	if g.used.HasKey(word) {
-		p.IsOut = true
-		g.nextTurn()
-		return UsedWord
-	}
-
-	// неверное слово
-	if !g.validWord(word) {
-		p.IsOut = true
-		g.nextTurn()
-		return Mistmatch
+		g.sendTurn()
+		return err
 	}
 
 	// с этого момента считается что игрок прислал верное слово
 	g.used.SetKey(word)
 	g.word = word
 	g.nextRune = g.lastRune(word)
-	g.nextTurn()
+	g.sendTurn()
 	return nil
 }
 
 // Start начинает игру
-func (g *Game) Start() (<-chan Turn, error) {
+func (g *Game) Start(dic *dictonary.Сollection) (<-chan Turn, error) {
+	if dic == nil {
+		return nil, fmt.Errorf("can not start game with empty dictonary")
+	}
+
 	if g.started {
 		return nil, AlredyStarted
 	}
 
+	g.dictonary = dic
 	g.used = dictonary.New()
 	g.turnChan = make(chan Turn, 1000)
 	g.started = true
