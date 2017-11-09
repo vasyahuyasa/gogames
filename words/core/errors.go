@@ -18,6 +18,9 @@ func (err playerError) Error() string {
 	return err.text
 }
 
+// NotEnoughtPlayers возникает когда вызывается команда start с недостаточным количеством игроков
+var NotEnoughtPlayers = coreError{"Недостаточно игроков чтобы начать"}
+
 // AlredyStarted возникает когда пытаются повторно запустить игру
 var AlredyStarted = coreError{"Игра уже запущена"}
 

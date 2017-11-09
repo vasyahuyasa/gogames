@@ -211,11 +211,15 @@ func (g *Game) MakeTurn(name string, word string) error {
 // Start начинает игру
 func (g *Game) Start(dic *dictonary.Сollection) (<-chan Turn, error) {
 	if dic == nil {
-		return nil, fmt.Errorf("can not start game with empty dictonary")
+		return nil, fmt.Errorf("пустой словарь")
 	}
 
 	if g.started {
 		return nil, AlredyStarted
+	}
+
+	if len(g.players) == 0 {
+		return nil, NotEnoughtPlayers
 	}
 
 	g.dictonary = dic

@@ -63,8 +63,14 @@ func (c *Сollection) DeleteKey(key string) {
 }
 
 // New создаёт новую инициализированую коллекцию
-func New() *Сollection {
+func New(keys ...string) *Сollection {
 	c := &Сollection{}
 	c.Reset()
+
+	// изначальные данные
+	for _, val := range keys {
+		c.SetKey(val)
+	}
+
 	return c
 }

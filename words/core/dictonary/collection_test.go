@@ -56,7 +56,7 @@ func TestReset(t *testing.T) {
 		c.SetKey(key)
 	}
 
-	c.Rest()
+	c.Reset()
 
 	for _, key := range test {
 		if c.HasKey(key) {
