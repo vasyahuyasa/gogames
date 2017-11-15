@@ -124,7 +124,7 @@ func (s *Service) run(conn *net.UDPConn) {
 
 			err = s.parseData(addr, buf[:n])
 			if err != nil {
-				log.Printf("Ошибка parseData: %v", err)
+				log.Printf("Ошибка parseData: %v\n %v", err, string(buf[:n]))
 			}
 		}
 	}()

@@ -85,15 +85,14 @@ func (g *Game) findNextPlayer() int {
 	// оставшиеся игроки до конца массива
 	nextIndex := g.currentPlayer + 1
 	for i, p := range g.players[nextIndex:] {
-		if !p.IsOut {
+		if !p.IsOut() {
 			return nextIndex + i
 		}
 	}
 
 	// игроки с начала массива до текущего
 	for i, p := range g.players[:g.currentPlayer] {
-		log.Println("index:", i, "val:", p.IsOut)
-		if !p.IsOut {
+		if !p.IsOut() {
 			return i
 		}
 	}
@@ -105,7 +104,7 @@ func (g *Game) findNextPlayer() int {
 func (g *Game) activePlayers() int {
 	count := 0
 	for _, p := range g.players {
-		if !p.IsOut {
+		if !p.IsOut() {
 			count++
 		}
 	}
@@ -118,6 +117,8 @@ func (g *Game) sendTurn() {
 	if g.activePlayers() <= 1 {
 		panic("We have a winner")
 	}
+
+	log.Printf("отправка запроса слова игроку: %q", g.players[g.currentPlayer].Name)
 
 	// найти следующего игрока и разослать пакет
 	g.turnChan <- Turn{
@@ -142,6 +143,8 @@ func (g *Game) RegisterPlayer(name string) error {
 		Name: name,
 	}
 	g.players = append(g.players, p)
+
+	log.Printf("Игрок зарегестрирован: %q", p.Name)
 
 	return nil
 }
@@ -195,7 +198,7 @@ func (g *Game) MakeTurn(name string, word string) error {
 	// верное ли слово прислал игрок
 	err := g.checkWord(word)
 	if err != nil {
-		p.IsOut = true
+		p.Out()
 		g.sendTurn()
 		return err
 	}
@@ -226,5 +229,9 @@ func (g *Game) Start(dic *dictonary.Сollection) (<-chan Turn, error) {
 	g.used = dictonary.New()
 	g.turnChan = make(chan Turn, 1000)
 	g.started = true
+
+	// игрок с индексом 0 в игре
+	g.sendTurn()
+
 	return g.turnChan, nil
 }

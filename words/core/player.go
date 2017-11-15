@@ -6,5 +6,15 @@ type Player struct {
 	Name string
 
 	// Флаг того, что игрок выбыл из игры
-	IsOut bool
+	out bool
+}
+
+// IsOut флаг того, выбыл ли игрок из игры
+func (p *Player) IsOut() bool {
+	return p.out
+}
+
+// Out устанавливает флаг того, что игрок выбыл из игры
+func (p *Player) Out() {
+	p.out = true
 }

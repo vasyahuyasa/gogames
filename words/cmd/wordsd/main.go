@@ -1,16 +1,28 @@
+//go:generate go-bindata -nometadata -o cities_data.go cities.txt
 package main
 
 import (
+	"bytes"
 	"log"
 	"time"
 
 	"github.com/vasyahuyasa/gogames/words/core"
+	"github.com/vasyahuyasa/gogames/words/core/dictonary"
 	udpTransport "github.com/vasyahuyasa/gogames/words/transport/udp"
 )
 
 const port = 0xbeef
 
 func main() {
+	data, err := Asset("cities.txt")
+	if err != nil {
+		panic(err)
+	}
+	r := bytes.NewReader(data)
+	dict := dictonary.New()
+	dict.FromReader(r)
+	log.Print("Словарь загружен")
+
 	game := &core.Game{}
 	trans, err := udpTransport.New(port)
 	if err != nil {
@@ -25,12 +37,11 @@ func main() {
 				log.Printf("Ошибка регистрации игрока в игре: %v", err)
 			}
 		}
-
 	}()
 
 	log.Println("Начало игры через 5 сек")
 	time.Sleep(time.Second * 5)
-	turns, err := game.Start()
+	turns, err := game.Start(dict)
 	if err != nil {
 		log.Fatalf("Невозможно начать игру: %v", err)
 	}
